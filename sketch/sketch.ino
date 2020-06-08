@@ -6,8 +6,8 @@
 #define LED_COUNT 7
 #define BTN_PIN 13
 #define LONGPRESS 1500
-#define WORK_DURATION 10 * 1000      // in milliseconds
-#define REST_DURATION 15 * 60 * 1000 // in milliseconds
+#define WORK_DURATION 5 * 1000      // in milliseconds
+#define REST_DURATION 10  * 1000 // in milliseconds
 #define WORK_LIGHT_TICK 2000         // in milliseconds
 #define WORK_LIGHT_STEP 15000 * (WORK_LIGHT_TICK / WORK_DURATION)
 
@@ -28,7 +28,7 @@ Bounce btn = Bounce();
 ////////////////////////////Custom Functions///////////////////////////////////
 
 byte press(Bounce debouncer)
-{ // short press > 1 , long press > 2
+{ // short press >> 1 , long press >> 2
 
   if (debouncer.fell())
   { // If button is pressed
@@ -76,12 +76,19 @@ void loop()
 
 void handleState()
 {
+
+
+
   if (paused)
   {
     // Render Lights
     if (now - lastLightMillis > 1000)
     {
       Serial.println("Paused...");
+        // Start Work Routine
+      strip.fill(strip.gamma32(strip.ColorHSV(0, 255, 255)), 0, 7);
+        // End Work Routine
+      strip.show();
       lastLightMillis = now;
     }
     // Unpause if Button is tapped
@@ -95,36 +102,75 @@ void handleState()
     switch (state)
     {
       case rest :
-      if (now - lastRestmillis > 1000) {
+      if (now - lastLightMillis > 1000) {
 
         Serial.println("Rest mode...");
-        lastRestmillis = now;
+        // Start rest Routine
+        strip.fill(strip.gamma32(strip.ColorHSV(10000, 255, 255)), 0, 7);
+        strip.show();
+        // End rest Routine
+        lastLightMillis = now;
 
-      } 
+      }
+         if ( now - lastRestmillis >=  REST_DURATION )
+      {
+        state = work;
+        lastWorkmillis = millis();
+        printStats();
+        break;
+      }
+
       if (press(btn) == 1) {
         paused = true;
       }else if (press(btn) == 2)
       {
         state = work;
+        lastWorkmillis = millis();
+        printStats();
       }
       break;
 
 
 
       case work :
-      if (now - lastWorkmillis > 1000) {
+
+      if (now - lastLightMillis > 1000) {
 
         Serial.println("Working....");
-        lastWorkmillis = now;
+        // Start Work Routine
+        
+        strip.fill(strip.gamma32(strip.ColorHSV(40000, 255, 255)), 0, 7);
+        strip.show();
+        // End Work Routine
+        lastLightMillis = now;
 
       } 
+      if ( now - lastWorkmillis >=  WORK_DURATION )
+      {
+        state = rest;
+        lastRestmillis = millis();
+        printStats();
+        break;
+      }
+
       if (press(btn) == 1) {
         paused = true;
       }else if (press(btn) == 2)
       {
         state = rest;
+        lastRestmillis = millis();
+        printStats();
       }
       break;
       }
   }
+}
+
+void printStats(){
+  Serial.print("NOW: ");
+  Serial.print(now);
+  Serial.print("LW: ");
+  Serial.print(lastWorkmillis);
+  Serial.print("LR: ");
+  Serial.print(lastRestmillis);
 }
