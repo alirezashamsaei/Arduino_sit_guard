@@ -18,7 +18,7 @@ unsigned long lastRestmillis = 0; // last time Rest watchdog was checked
 
 unsigned long now = 0;
 int step = 45 * 60 / 1; //TODO: fix this
-bool paused = true;
+bool paused = false;
 
 // Declare our NeoPixel strip object:
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB);
@@ -84,17 +84,19 @@ void handleState()
     // Render Lights
     if (now - lastLightMillis > 1000)
     {
-      Serial.println("Paused...");
-        // Start Work Routine
-      strip.fill(strip.gamma32(strip.ColorHSV(0, 255, 255)), 0, 7);
-        // End Work Routine
-      strip.show();
-      lastLightMillis = now;
+      // Start Work Routine
+
+      
+      renderLights(0);
+
+      // End Work Routine
+
     }
     // Unpause if Button is tapped
     if (press(btn) == 1)
     {
       paused = false;
+      Serial.println("Resuming...");
     }
   }
   else // If not paused
@@ -102,18 +104,15 @@ void handleState()
     switch (state)
     {
       case rest :
-      if (now - lastLightMillis > 1000) {
 
-        Serial.println("Rest mode...");
         // Start rest Routine
-        strip.fill(strip.gamma32(strip.ColorHSV(10000, 255, 255)), 0, 7);
-        strip.show();
+      
+        renderLights(10000);
         // End rest Routine
-        lastLightMillis = now;
 
-      }
          if ( now - lastRestmillis >=  REST_DURATION )
       {
+        Serial.println("Entering Work mode...");
         state = work;
         lastWorkmillis = millis();
         printStats();
@@ -122,8 +121,10 @@ void handleState()
 
       if (press(btn) == 1) {
         paused = true;
+        Serial.println("Pausing...");
       }else if (press(btn) == 2)
       {
+        Serial.println("Entering Work mode...");
         state = work;
         lastWorkmillis = millis();
         printStats();
@@ -134,19 +135,11 @@ void handleState()
 
       case work :
 
-      if (now - lastLightMillis > 1000) {
+      renderLights(50000);
 
-        Serial.println("Working....");
-        // Start Work Routine
-        
-        strip.fill(strip.gamma32(strip.ColorHSV(40000, 255, 255)), 0, 7);
-        strip.show();
-        // End Work Routine
-        lastLightMillis = now;
-
-      } 
       if ( now - lastWorkmillis >=  WORK_DURATION )
       {
+        Serial.println("Entering Rest mode...");
         state = rest;
         lastRestmillis = millis();
         printStats();
@@ -154,9 +147,11 @@ void handleState()
       }
 
       if (press(btn) == 1) {
+        Serial.println("Pausing ...");
         paused = true;
       }else if (press(btn) == 2)
       {
+        Serial.println("Entering Rest mode...");
         state = rest;
         lastRestmillis = millis();
         printStats();
@@ -166,11 +161,24 @@ void handleState()
   }
 }
 
+void renderLights(unsigned short hue){
+
+ if (now - lastLightMillis > 1000) {
+
+        
+        strip.fill(strip.gamma32(strip.ColorHSV(hue, 255, 255)), 0, 7);
+        strip.show();
+        lastLightMillis = millis();
+
+      } 
+}
+
+
 void printStats(){
   Serial.print("NOW: ");
   Serial.print(now);
-  Serial.print("LW: ");
+  Serial.print(" LW: ");
   Serial.print(lastWorkmillis);
-  Serial.print("LR: ");
-  Serial.print(lastRestmillis);
+  Serial.print(" LR: ");
+  Serial.println(lastRestmillis);
 }
