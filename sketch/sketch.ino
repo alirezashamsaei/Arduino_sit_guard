@@ -6,23 +6,23 @@
 #define LED_COUNT 7
 #define BTN_PIN 13
 #define LONGPRESS 1500
-#define WORK_DURATION 5 * 1000      // in milliseconds
-#define REST_DURATION 10  * 1000 // in milliseconds
-#define WORK_LIGHT_TICK 2000         // in milliseconds
-#define WORK_LIGHT_STEP 15000 * (WORK_LIGHT_TICK / WORK_DURATION)
+#define WORK_DURATION  180000 // in milliseconds
+#define REST_DURATION  3  * 1000 // in milliseconds
+// #define WORK_HUE_STEP 65536 / (WORK_DURATION * 10)
 
+const int  workHueStep = (int) 22000 / ( WORK_DURATION / 1000 )  ;
+// const int workHueStep = 2200;
+unsigned short hue = 22000;
 unsigned long lastLightMillis = 0; // last time a color is shown on the led strip
 unsigned long lastButtonPress = 0;
 unsigned long lastWorkmillis = 0; // last time work watchdog was checked
 unsigned long lastRestmillis = 0; // last time Rest watchdog was checked
-
 unsigned long now = 0;
-int step = 45 * 60 / 1; //TODO: fix this
+
 bool paused = false;
 
 // Declare our NeoPixel strip object:
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB);
-unsigned short hue = 0;
 
 Bounce btn = Bounce();
 ////////////////////////////Custom Functions///////////////////////////////////
@@ -65,6 +65,10 @@ void setup()
   strip.setBrightness(120);
   strip.show();
   Serial.println("+++++++++++ SETUP +++++++++++");
+  Serial.print("Work Duration Is: ");
+  Serial.println(WORK_DURATION);
+  Serial.print("Step Is: ");
+  Serial.println(workHueStep);
 }
 
 void loop()
@@ -114,6 +118,7 @@ void handleState()
       {
         Serial.println("Entering Work mode...");
         state = work;
+        hue = 22000;
         lastWorkmillis = millis();
         printStats();
         break;
@@ -134,8 +139,15 @@ void handleState()
 
 
       case work :
+      if (now - lastLightMillis > 1000)
+      {
 
-      renderLights(50000);
+        renderLights(hue);
+        hue -= workHueStep;
+
+      }
+      
+
 
       if ( now - lastWorkmillis >=  WORK_DURATION )
       {
@@ -169,16 +181,19 @@ void renderLights(unsigned short hue){
         strip.fill(strip.gamma32(strip.ColorHSV(hue, 255, 255)), 0, 7);
         strip.show();
         lastLightMillis = millis();
+        Serial.print("HUE: ");
+        Serial.println(hue);
 
       } 
 }
 
 
 void printStats(){
-  Serial.print("NOW: ");
-  Serial.print(now);
-  Serial.print(" LW: ");
-  Serial.print(lastWorkmillis);
-  Serial.print(" LR: ");
-  Serial.println(lastRestmillis);
+  // Serial.print("NOW: ");
+  // Serial.print(now);
+  // Serial.print(" LW: ");
+  // Serial.print(lastWorkmillis);
+  // Serial.print(" LR: ");
+  // Serial.println(lastRestmillis);
+
 }
